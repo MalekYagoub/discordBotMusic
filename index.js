@@ -1,7 +1,7 @@
 const Discord = require('discord.js')
 const fs = require('fs')
-// const client = new Discord.Client()
 const ytdl = require('ytdl-core')
+const configToken = require('./configToken')
 
 class Bot {
 	constructor () {
@@ -10,7 +10,7 @@ class Bot {
 		this.ytMusics = []
 		this.ytUrls = []
 
-		this.client.login('MzEyOTkzMTg3ODk3ODAyNzUy.C_jJLA.xXScjoKYGcwU0OYV4vhPndjpDIo')
+		this.client.login(configToken.token)
 
 		this.client.on('ready', () => {
 			console.log('Connecté en tant que :' + this.client.user.tag)
