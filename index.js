@@ -100,10 +100,17 @@ class Bot {
 				// message.channel.send("Musique en pause")
 				this.dispatcher.pause()
 			}
+
 			if (message.content === '/continue' && this.dispatcher) {
 				// message.channel.send("Musique reprise")
 				this.dispatcher.resume()
 			}
+
+			if (/\/volume .+/.test(message.content) && this.dispatcher) {
+				const volumeNumber = message.content.split(" ")[1]
+				this.dispatcher.setVolume(volumeNumber)
+			}
+
 		})
 	}
 
@@ -126,8 +133,6 @@ class Bot {
 			message.member.voiceChannel.leave()
 			this.dispatcher = null
 		}
-		console.log('musique fini')
-		console.log(this.ytUrls)
 	}
 }
 
