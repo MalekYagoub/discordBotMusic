@@ -1,7 +1,13 @@
 const Discord = require('discord.js')
-const fs = require('fs')
 const ytdl = require('ytdl-core')
 const configToken = require('./configToken')
+const ytbSearch = require('youtube-search')
+const urlRegex = require('url-regex');
+
+const ytSearchOpts = {
+	maxResults: 1,
+	key: configToken.youtubeApiKey
+}
 
 class Bot {
 	constructor () {
@@ -49,7 +55,7 @@ class Bot {
 
 			if (message.content === '/skip' && this.ytMusics.length > 0) {
 				// Si il ya déjà un flux audio existant sinon on delete direct la musique
-				console.log('on a tappé skip')
+				console.log('------ Song skipped ------')
 				if (this.dispatcher) {
 					this.dispatcher.end()
 				} else {
@@ -66,20 +72,28 @@ class Bot {
 			}
 
 			if (/\/add .+/.test(message.content)) {
-				// On récupère l'url de la vidéo
-				const ytVideoString = message.content.split(" ")[1]
-				try {
-					// On transforme la vidéo en readable Stream
-					const ytVideoStream = ytdl(message.content.split(" ")[1], {filter : 'audioonly'})
-					// On l'ajoute à la playlist
-					this.ytUrls.push(ytVideoString)
-					this.ytMusics.push(ytVideoStream)
-					message.reply('La musique a bien été rajouté a la playlist **(position: ' + this.ytMusics.length + ')**')
-				}
-				catch (error) {
-					// L'url est mauvaise et ytdl n'a pas pu convertir la vidéo en readable stream
-					console.log(error)
-					message.reply('Une erreur est survenue, ptet une mauvaise URL ou un espace en trop')
+				// On récupère l'url de la vidéo ou la recherche de vidéo
+				let ytVideoString = message.content.split(" ").slice(1).join(" ")
+
+				// Si c'est direct une url youtube, on ajoute la musique
+				if (urlRegex({exact: true}).test(ytVideoString)) {
+					this.addMusicFromUrl(ytVideoString, message)
+				} else {
+					// Sinon, on cherche une vidéo qui correspond à la recherche et envoit l'url correspondant à la fonction d'ajout de musique
+					ytbSearch(ytVideoString, ytSearchOpts, (error, result) => {
+						if (error) {
+							// ytb search a pas réussi a trouver de vidéos donc erreur
+							console.log(error)
+							message.reply(':warning: Une erreur est survenue, ptet une mauvaise recherche :warning:')
+						}
+
+						if (result.length > 0) {
+							this.addMusicFromUrl(result[0].link, message, true)
+							console.log(result)
+						} else {
+							message.reply(':warning: Aucun résultat pour cette recherche :warning:')
+						}
+					});
 				}
 			}
 
@@ -114,6 +128,30 @@ class Bot {
 		})
 	}
 
+	addMusicFromUrl (url, message, showUrl) {
+		try {
+			// On transforme la vidéo en readable Stream
+			const ytVideoStream = ytdl(url, {filter : 'audioonly'})
+			let urlToShow = ''
+
+			// On l'ajoute à la playlist
+			this.ytUrls.push(url)
+			this.ytMusics.push(ytVideoStream)
+
+			// Afficher ou pas l'url dans le message, on l'affiche que lorsque le user a pas mit un lien youtube car discord affiche la thumbnail dans ce cas là et ça ferait un doublon
+			if (showUrl) {
+				urlToShow = url
+			}
+
+			message.reply('La musique a bien été rajouté a la playlist **(position: ' + this.ytMusics.length + ')** ' + urlToShow)
+		}
+		catch (error) {
+			// L'url est mauvaise et ytdl n'a pas pu convertir la vidéo en readable stream
+			console.log(error)
+			message.reply(':warning: Une erreur est survenue, ptet une mauvaise URL ou un espace en trop :warning:')
+		}
+	}
+
 	// Joue la premiere musique de l'array (se lance a chaque fois qu'une musique se termine est est supprimé de l'array)
 	playMusic (connection, message) {
 		this.dispatcher = connection.playStream(this.ytMusics[0])
@@ -136,4 +174,4 @@ class Bot {
 	}
 }
 
-var bot = new Bot()
+let bot = new Bot()
