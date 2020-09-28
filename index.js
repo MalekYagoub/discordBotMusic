@@ -2,7 +2,6 @@ require('dotenv').config()
 
 const Discord = require('discord.js')
 const ytdl = require('ytdl-core')
-const configToken = require('./configToken')
 const ytbSearch = require('youtube-search')
 const urlRegex = require('url-regex');
 
