@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 const Discord = require('discord.js')
 const ytdl = require('ytdl-core')
 const configToken = require('./configToken')
@@ -6,7 +8,7 @@ const urlRegex = require('url-regex');
 
 const ytSearchOpts = {
 	maxResults: 1,
-	key: configToken.youtubeApiKey
+	key: process.env.YOUTUBE_API_KEY
 }
 
 class Bot {
@@ -16,7 +18,7 @@ class Bot {
 		this.ytMusics = []
 		this.ytUrls = []
 
-		this.client.login(configToken.token)
+		this.client.login(process.env.BOT_TOKEN)
 
 		this.client.on('ready', () => {
 			console.log('Connecté en tant que :' + this.client.user.tag)
@@ -26,6 +28,20 @@ class Bot {
 			// Voice only works in guilds, if the message does not come from a guild,
 			// we ignore it
 			if (!message.guild) return
+
+			if (message.content == '/muteAll') {
+				let channel = message.member.voiceChannel;
+				for (let member of channel.members) {
+					member[1].setMute(true)
+				}
+			}
+
+			if (message.content == '/unmuteAll') {
+				let channel = message.member.voiceChannel;
+				for (let member of channel.members) {
+					member[1].setMute(false)
+				}
+			}
 
 			// commande pour lancer la playlist
 			if (message.content === '/play') {
