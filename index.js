@@ -13,14 +13,37 @@ const ytSearchOpts = {
 class Bot {
 	constructor () {
 		this.client  = new Discord.Client()
+
 		this.dispatcher = null
 		this.ytMusics = []
 		this.ytUrls = []
+
+		this.muteMessageId = null
+		this.muteMessageSenderId = null
+		this.muteMessageSenderVoiceChannel = null
 
 		this.client.login(process.env.BOT_TOKEN)
 
 		this.client.on('ready', () => {
 			console.log('Connecté en tant que :' + this.client.user.tag)
+		})
+
+		this.client.on('messageReactionAdd', async (reaction, user) => {
+			// if to check if the sender of the reaction is the sender of the /mute message
+			if (reaction.message.id === this.muteMessageId && !user.bot && this.muteMessageSenderId === user.id) {
+				for (let member of this.muteMessageSenderVoiceChannel.members) {
+					member[1].setMute(true)
+				}
+			}
+		})
+
+		this.client.on('messageReactionRemove', async (reaction, user) => {
+			// if to check if the sender of the reaction is the sender of the /mute message
+			if (reaction.message.id === this.muteMessageId && !user.bot && this.muteMessageSenderId === user.id) {
+				for (let member of this.muteMessageSenderVoiceChannel.members) {
+					member[1].setMute(false)
+				}
+			}
 		})
 
 		this.client.on('message', message => {
@@ -39,6 +62,22 @@ class Bot {
 				let channel = message.member.voiceChannel;
 				for (let member of channel.members) {
 					member[1].setMute(false)
+				}
+			}
+
+			if (message.content === '/mute') {
+				// check if sender is admin
+				if (message.member.voiceChannel && message.member.roles.has('190542097776902144')) {
+					this.muteMessageSenderId = message.member.user.id
+					this.muteMessageSenderVoiceChannel = message.member.voiceChannel
+					message.channel.send('**React to mute | remove reaction to unmute**')
+				}
+			}
+
+			if (message.content === '**React to mute | remove reaction to unmute**') {
+				if (message.member.user.bot && message.member.roles.has('190542097776902144')) {
+					message.react('🎙️')
+					this.muteMessageId = message.id
 				}
 			}
 
